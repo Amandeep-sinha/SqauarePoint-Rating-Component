@@ -1,24 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import './Rating.css';
 
 const Rating = ({ value, emptyIcon, filledIcon, halfFilledIcon, steps }) => {
     const [rating, setRating] = useState(value);
     const [hoverRating, setHoverRating] = useState(undefined);
+    const containerRef = useRef(null);
 
     useEffect(() => {
         setRating(value);
     }, [value]);
 
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.focus();
+        }
+    }, []);
+
     const handleClick = (index, event) => {
-        const half = steps === 0.5 && isLessThanHalf(event);
-        const newRating = half ? index + 0.5 : index + 1;
-        if (rating === newRating) {
+        if (rating === index + 1 || rating === index + 0.5) {
             setRating(undefined);
         } else {
+            const half = steps === 0.5 && isLessThanHalf(event);
+            const newRating = half ? index + 0.5 : index + 1;
             setRating(newRating);
         }
-    };
+    };    
 
     const handleMouseMove = (index, event) => {
         if (steps === 0.5) {
@@ -38,7 +45,7 @@ const Rating = ({ value, emptyIcon, filledIcon, halfFilledIcon, steps }) => {
         if (event.key === 'ArrowRight') {
             newRating = rating + steps > 5 ? 5 : rating + steps;
         } else if (event.key === 'ArrowLeft') {
-            newRating = rating - steps < 0.5 ? 0.5 : rating - steps;
+            newRating = rating - steps < 0 ? 0 : rating - steps;
         } else if (!isNaN(event.key) && event.key >= 1 && event.key <= 5) {
             newRating = Number(event.key);
         }
@@ -50,25 +57,20 @@ const Rating = ({ value, emptyIcon, filledIcon, halfFilledIcon, steps }) => {
     const isLessThanHalf = (event) => {
         const { target } = event;
         const boundingClientRect = target.getBoundingClientRect();
-        let mouseAt = event.clientX - boundingClientRect.left;
-        mouseAt = Math.round(Math.abs(mouseAt));
+        const mouseAt = event.clientX - boundingClientRect.left;
         return mouseAt <= boundingClientRect.width / 2;
     };
 
     const renderSymbol = (index) => {
         let icon;
         if (hoverRating !== undefined) {
-            if (hoverRating > index) {
-                icon = hoverRating === index + 0.5 ? halfFilledIcon : filledIcon;
-            } else {
-                icon = emptyIcon;
-            }
+            icon = hoverRating > index
+                ? (hoverRating === index + 0.5 ? halfFilledIcon : filledIcon)
+                : emptyIcon;
         } else {
-            if (rating > index) {
-                icon = rating === index + 0.5 ? halfFilledIcon : filledIcon;
-            } else {
-                icon = emptyIcon;
-            }
+            icon = rating > index
+                ? (rating === index + 0.5 ? halfFilledIcon : filledIcon)
+                : emptyIcon;
         }
 
         return (
@@ -87,6 +89,7 @@ const Rating = ({ value, emptyIcon, filledIcon, halfFilledIcon, steps }) => {
 
     return (
         <div
+            ref={containerRef}
             tabIndex="0"
             className="star-rating"
             data-testid="star-rating-container"
@@ -106,7 +109,7 @@ Rating.propTypes = {
 };
 
 Rating.defaultProps = {
-    value: undefined,
+    value: 0,
     emptyIcon: '/icons/stars/empty.svg',
     filledIcon: '/icons/stars/filled.svg',
     halfFilledIcon: '/icons/stars/half.svg',
